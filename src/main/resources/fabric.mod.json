@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "halloween_menu",
+  "version": "${version}",
+  "name": "Halloween Menu",
+  "description": "Живое хеллоуинское главное меню с 3D-сценой и музыкой.",
+  "authors": ["you"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.halloweenmenu.client.HalloweenMenuClient"]
+  },
+  "mixins": ["halloween_menu.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "track1": { "sounds": [ { "name": "halloween_menu:track1", "stream": true } ] },
+  "track2": { "sounds": [ { "name": "halloween_menu:track2", "stream": true } ] }
+}
