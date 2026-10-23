@@ -33,11 +33,40 @@ public final class HalloweenScreen extends Screen {
             "..ooooooo.."
     };
 
+    private static final String[] BAT = {
+            "k.......k",
+            "kk.kkk.kk",
+            "kkkkkkkkk",
+            "kkkkkkkkk",
+            ".kk.k.kk.",
+            "..k...k.."
+    };
+
+    private static final String[] GHOST = {
+            ".kkkkk.",
+            "kkkkkkk",
+            "kk.k.kk",
+            "kkkkkkk",
+            "kkkkkkk",
+            "kkkkkkk",
+            "k.kkk.k"
+    };
+
+    private static final String[] SKULL = {
+            ".kkkkk.",
+            "kkkkkkk",
+            "k..k..k",
+            "kkkkkkk",
+            ".kkkkk.",
+            ".k.k.k."
+    };
+
     private static final class Rect {
         int x, y, w, h;
         String label;
         Runnable action;
         boolean big;
+        String[] icon;
 
         boolean contains(double mx, double my) {
             return mx >= x && mx < x + w && my >= y && my < y + h;
@@ -50,6 +79,7 @@ public final class HalloweenScreen extends Screen {
     private String notice = "";
     private long noticeUntil;
     private int panelX, panelW, titleY, accountY;
+    private float titleScale = 3.0f;
 
     public HalloweenScreen() {
         super(Text.literal("Halloween"));
@@ -76,8 +106,9 @@ public final class HalloweenScreen extends Screen {
         return false;
     }
 
-    private Rect add(int x, int y, int w, int h, String label, Runnable action) {
+    private Rect add(int x, int y, int w, int h, String label, String[] icon, Runnable action) {
         Rect r = new Rect();
+        r.icon = icon;
         r.x = x;
         r.y = y;
         r.w = w;
@@ -90,39 +121,63 @@ public final class HalloweenScreen extends Screen {
 
     private void layout() {
         rects.clear();
-        panelW = (int) (width * 0.236f);
-        panelX = (int) (width * 0.745f);
-        titleY = (int) (height * 0.30f);
+        int margin = Math.max(8, width / 30);
+        panelW = Math.max(110, Math.min(190, (int) (width * 0.32f)));
+        panelX = width - panelW - margin;
 
-        int h = Math.max(22, (int) (height * 0.045f));
-        int gap = Math.max(5, (int) (height * 0.012f));
+        // заголовок подгоняем под ширину панели
+        titleScale = Math.max(1.0f, Math.min(3.0f, (panelW - 4) / (float) textRenderer.getWidth("HALLOWEEN")));
+        titleY = 36;
+        int y0 = titleY + (int) (8 * titleScale) + 18;
 
-        int bigH = Math.max(38, (int) (height * 0.085f));
-        int playW = (int) (width * 0.166f);
-        add((int) (width * 0.567f), (int) (height * 0.46f), playW, bigH, "ИГРАТЬ", () -> open(new SelectWorldScreen(this))).big = true;
+        boolean hasAccount = AccountSwitchers.available();
+        int rows = hasAccount ? 6 : 5;          // ИГРАТЬ, Сеть, [Аккаунт], Моды, Настройки|Выход, Ванильное
+        int bigH = 30, h = 22, gap = 5, accText = 14;
+        int total = bigH + (rows - 1) * h + (rows - 1) * gap + 4 + accText;
+        int avail = height - y0 - 6;
+        if (total > avail) {
+            float f = Math.max(0.6f, avail / (float) total);
+            bigH = Math.max(20, (int) (bigH * f));
+            h = Math.max(14, (int) (h * f));
+            gap = Math.max(3, (int) (gap * f));
+        }
 
-        int y = (int) (height * 0.44f);
-        add(panelX, y, panelW, h, "Одиночная игра", () -> open(new SelectWorldScreen(this)));
+        int y = y0;
+        add(panelX, y, panelW, bigH, "ИГРАТЬ", null, () -> open(new SelectWorldScreen(this))).big = true;
+        y += bigH + gap + 4;
+        add(panelX, y, panelW, h, "Сетевая игра", BAT, () -> open(new MultiplayerScreen(this)));
         y += h + gap;
-        add(panelX, y, panelW, h, "Сетевая игра", () -> open(new MultiplayerScreen(this)));
-        y += h + gap + 6;
-        add(panelX, y, panelW, h, "Моды", this::openMods);
+        if (hasAccount) {
+            add(panelX, y, panelW, h, "Сменить аккаунт", GHOST, this::openAccounts);
+            y += h + gap;
+        }
+        add(panelX, y, panelW, h, "Моды", SKULL, this::openMods);
         y += h + gap;
         int half = (panelW - gap) / 2;
-        add(panelX, y, half, h, "Настройки", () -> open(new OptionsScreen(this, client.options)));
-        add(panelX + half + gap, y, panelW - half - gap, h, "Выйти из игры", () -> client.scheduleStop());
-        accountY = y + h + gap + 4;
-
-        add(panelX, (int) (height * 0.835f), panelW, h, "Ванильное главное меню", () -> {
+        add(panelX, y, half, h, "Настройки", null, () -> open(new OptionsScreen(this, client.options)));
+        add(panelX + half + gap, y, panelW - half - gap, h, "Выход", null, () -> client.scheduleStop());
+        y += h + gap;
+        add(panelX, y, panelW, h, "Ванильное меню", null, () -> {
             HalloweenState.vanilla = true;
             client.setScreen(new TitleScreen());
         });
+        accountY = y + h + 4;
 
         int mw = 214;
         int mx = (width - mw) / 2;
-        prevBtn = add(mx + 4, 6, 22, 20, "<", HalloweenMusic::previous);
-        playBtn = add(mx + 28, 6, 22, 20, "||", HalloweenMusic::togglePause);
-        nextBtn = add(mx + mw - 26, 6, 22, 20, ">", HalloweenMusic::next);
+        prevBtn = add(mx + 4, 6, 22, 20, "<", null, HalloweenMusic::previous);
+        playBtn = add(mx + 28, 6, 22, 20, "||", null, HalloweenMusic::togglePause);
+        nextBtn = add(mx + mw - 26, 6, 22, 20, ">", null, HalloweenMusic::next);
+    }
+
+    private void openAccounts() {
+        Screen s = AccountSwitchers.create(this);
+        if (s != null) {
+            client.setScreen(s);
+        } else {
+            notice = "Не удалось открыть смену аккаунта";
+            noticeUntil = System.currentTimeMillis() + 3500;
+        }
     }
 
     private void open(Screen screen) {
@@ -174,21 +229,22 @@ public final class HalloweenScreen extends Screen {
         drawTitle(ctx, t);
 
         for (Rect r : rects) {
-            boolean hover = r.contains(mouseX, mouseY);
-            if (r.big) {
-                drawPlay(ctx, r, hover, t);
-            } else if (r == prevBtn || r == playBtn || r == nextBtn) {
+            if (r == prevBtn || r == playBtn || r == nextBtn) {
                 // нарисуем вместе с панелью плеера ниже
                 continue;
-            } else {
-                drawButton(ctx, r, hover);
             }
+            drawOrange(ctx, r, r.contains(mouseX, mouseY), t);
         }
         drawPlayer(ctx, mouseX, mouseY);
 
         // аккаунт
-        String acc = "Текущий аккаунт: " + client.getSession().getUsername();
-        ctx.drawText(textRenderer, acc, panelX, accountY, 0xFF9A93B5, true);
+        String acc = "Аккаунт: " + client.getSession().getUsername();
+        float accScale = Math.min(1.0f, panelW / (float) textRenderer.getWidth(acc));
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(panelX, accountY, 0);
+        ctx.getMatrices().scale(accScale, accScale, 1f);
+        ctx.drawText(textRenderer, acc, 0, 0, 0xFF9A93B5, true);
+        ctx.getMatrices().pop();
 
         if (System.currentTimeMillis() < noticeUntil) {
             int w = textRenderer.getWidth(notice);
@@ -200,7 +256,7 @@ public final class HalloweenScreen extends Screen {
 
     private void drawTitle(DrawContext ctx, double t) {
         String title = "HALLOWEEN";
-        float scale = 3.0f;
+        float scale = titleScale;
         int cx = panelX + panelW / 2;
         int w = (int) (textRenderer.getWidth(title) * scale);
         float pulse = 0.85f + 0.15f * (float) Math.sin(t * 2.2);
@@ -212,43 +268,49 @@ public final class HalloweenScreen extends Screen {
         ctx.drawText(textRenderer, title, 0, 0, orange, false);
         ctx.getMatrices().pop();
         String sub = "ночное меню";
-        ctx.drawText(textRenderer, sub, cx - textRenderer.getWidth(sub) / 2, titleY + 32, 0xFF8F86B8, true);
+        ctx.drawText(textRenderer, sub, cx - textRenderer.getWidth(sub) / 2, titleY + (int) (8 * titleScale) + 4, 0xFF8F86B8, true);
     }
 
-    private void drawButton(DrawContext ctx, Rect r, boolean hover) {
-        int bg = hover ? 0xE62E1A0C : 0xD70E0C16;
-        int border = hover ? 0xFFFF9628 : 0xFF463A5A;
-        int off = hover ? -3 : 0;
-        int x = r.x + off;
-        ctx.fill(x, r.y, x + r.w, r.y + r.h, bg);
-        ctx.drawBorder(x, r.y, r.w, r.h, border);
-        if (hover) {
-            ctx.fill(x + 1, r.y + 1, x + r.w - 1, r.y + 3, 0x40FFAA40);
-        }
-        int color = hover ? 0xFFFFFFFF : 0xFFD2CDE4;
-        ctx.drawCenteredTextWithShadow(textRenderer, r.label, x + r.w / 2, r.y + (r.h - 8) / 2, color);
-    }
-
-    private void drawPlay(DrawContext ctx, Rect r, boolean hover, double t) {
+    /** Все кнопки меню в одном хеллоуинском стиле: оранжевый градиент, свечение, иконка. */
+    private void drawOrange(DrawContext ctx, Rect r, boolean hover, double t) {
         float pulse = 0.5f + 0.5f * (float) Math.sin(t * 2.6);
-        int glow = (int) ((hover ? 90 : 40) + 40 * pulse);
-        for (int i = 4; i >= 1; i--) {
+        int x = r.x + (hover && !r.big ? -3 : 0);
+        int glow = r.big ? (int) ((hover ? 90 : 40) + 40 * pulse) : (hover ? 80 : 26);
+        for (int i = 3; i >= 1; i--) {
             int a = glow / (i + 1);
-            ctx.fill(r.x - i * 2, r.y - i * 2, r.x + r.w + i * 2, r.y + r.h + i * 2, (a << 24) | 0xFF8A1C);
+            ctx.fill(x - i * 2, r.y - i * 2, x + r.w + i * 2, r.y + r.h + i * 2, (a << 24) | 0xFF8A1C);
         }
         int top = hover ? 0xFFFFB03C : 0xFFFF9626;
         int bottom = hover ? 0xFFE0640C : 0xFFC85A0A;
-        ctx.fillGradient(r.x, r.y, r.x + r.w, r.y + r.h, top, bottom);
-        ctx.drawBorder(r.x, r.y, r.w, r.h, 0xFFFFD890);
-        ctx.fill(r.x + 1, r.y + 1, r.x + r.w - 1, r.y + 3, 0x55FFFFFF);
+        ctx.fillGradient(x, r.y, x + r.w, r.y + r.h, top, bottom);
+        ctx.drawBorder(x, r.y, r.w, r.h, 0xFFFFD890);
+        ctx.fill(x + 1, r.y + 1, x + r.w - 1, r.y + 3, 0x55FFFFFF);
 
-        // тыква
-        int px = r.x + 8, py = r.y + 8, s = 2;
-        for (int row = 0; row < PUMPKIN.length; row++) {
-            for (int col = 0; col < PUMPKIN[row].length(); col++) {
-                char ch = PUMPKIN[row].charAt(col);
+        String[] icon = r.big ? PUMPKIN : r.icon;
+        int textX = x;
+        int textW = r.w;
+        if (icon != null) {
+            int s = Math.max(1, Math.min(2, (r.h - 8) / icon.length));
+            int iw = icon[0].length() * s;
+            drawSprite(ctx, icon, x + 7, r.y + (r.h - icon.length * s) / 2, s);
+            textX = x + 7 + iw + 2;
+            textW = r.w - (textX - x) - 4;
+        }
+        float maxScale = r.big ? 1.6f : 1.0f;
+        float scale = Math.min(maxScale, Math.max(0.5f, (textW - 4) / (float) textRenderer.getWidth(r.label)));
+        float tw = textRenderer.getWidth(r.label) * scale;
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(textX + (textW - tw) / 2f, r.y + (r.h - 8 * scale) / 2f + 1, 0);
+        ctx.getMatrices().scale(scale, scale, 1f);
+        ctx.drawText(textRenderer, r.label, 0, 0, 0xFFFFFFFF, true);
+        ctx.getMatrices().pop();
+    }
+
+    private static void drawSprite(DrawContext ctx, String[] sprite, int px, int py, int s) {
+        for (int row = 0; row < sprite.length; row++) {
+            for (int col = 0; col < sprite[row].length(); col++) {
                 int color;
-                switch (ch) {
+                switch (sprite[row].charAt(col)) {
                     case 'o':
                         color = 0xFFE87812;
                         break;
@@ -264,15 +326,6 @@ public final class HalloweenScreen extends Screen {
                 ctx.fill(px + col * s, py + row * s, px + col * s + s, py + row * s + s, color);
             }
         }
-        // подпись
-        String label = r.label;
-        float scale = 1.6f;
-        int tw = (int) (textRenderer.getWidth(label) * scale);
-        ctx.getMatrices().push();
-        ctx.getMatrices().translate(r.x + 36 + (r.w - 36 - tw) / 2f, r.y + (r.h - 8 * scale) / 2f + 1, 0);
-        ctx.getMatrices().scale(scale, scale, 1f);
-        ctx.drawText(textRenderer, label, 0, 0, 0xFFFFFFFF, true);
-        ctx.getMatrices().pop();
     }
 
     private void drawPlayer(DrawContext ctx, int mouseX, int mouseY) {
