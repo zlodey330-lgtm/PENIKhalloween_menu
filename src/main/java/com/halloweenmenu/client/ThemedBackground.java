@@ -3,10 +3,9 @@ package com.halloweenmenu.client;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.gui.screen.world.SelectWorldScreen;
+import net.minecraft.client.gui.screen.TitleScreen;
 
-/** Хеллоуинский фон и стиль для экранов «Выбор мира» и «Сетевая игра». */
+/** Хеллоуинский фон и стиль для всех экранов вне мира: выбор мира, сеть, настройки и их вкладки. */
 public final class ThemedBackground {
 
     private static final long START = System.currentTimeMillis();
@@ -15,7 +14,7 @@ public final class ThemedBackground {
     private ThemedBackground() {
     }
 
-    /** Нужно ли оформлять этот экран (только в главном меню, не внутри мира). */
+    /** Нужно ли оформлять этот экран (только вне мира; внутри игры всё ванильное). */
     public static boolean applies(Screen screen) {
         if (screen == null) {
             return false;
@@ -23,7 +22,8 @@ public final class ThemedBackground {
         if (MinecraftClient.getInstance().world != null) {
             return false;
         }
-        return screen instanceof SelectWorldScreen || screen instanceof MultiplayerScreen;
+        // главное меню рисует себя само; ванильное главное меню оставляем ванильным
+        return !(screen instanceof TitleScreen) && !(screen instanceof HalloweenScreen);
     }
 
     public static void render(DrawContext ctx, int mouseX, int mouseY) {

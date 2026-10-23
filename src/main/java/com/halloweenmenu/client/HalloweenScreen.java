@@ -226,6 +226,8 @@ public final class HalloweenScreen extends Screen {
         p.flush();
         McPainter.end();
 
+        AmbientFx.render(ctx, width, height, t);
+
         drawTitle(ctx, t);
 
         for (Rect r : rects) {

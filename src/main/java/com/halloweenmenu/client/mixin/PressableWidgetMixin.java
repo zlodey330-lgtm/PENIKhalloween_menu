@@ -4,6 +4,7 @@ import com.halloweenmenu.client.ThemedBackground;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.CyclingButtonWidget;
 import net.minecraft.client.gui.widget.PressableWidget;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,14 +18,14 @@ public abstract class PressableWidgetMixin {
     @Inject(method = "renderWidget", at = @At("HEAD"), cancellable = true, require = 0)
     private void halloween$button(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         Object self = this;
-        if (!(self instanceof ButtonWidget)) {
+        if (!(self instanceof ButtonWidget) && !(self instanceof CyclingButtonWidget)) {
             return;
         }
         MinecraftClient client = MinecraftClient.getInstance();
         if (!ThemedBackground.applies(client.currentScreen)) {
             return;
         }
-        ButtonWidget b = (ButtonWidget) self;
+        PressableWidget b = (PressableWidget) self;
         int x = b.getX();
         int y = b.getY();
         int w = b.getWidth();
