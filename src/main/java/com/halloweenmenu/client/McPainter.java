@@ -29,7 +29,17 @@ final class McPainter implements ParallaxScene.Painter {
     private Kind kind = Kind.NONE;
 
     McPainter(DrawContext context) {
-        this.matrix = context.getMatrices().peek().getPositionMatrix();
+        this(context, 0);
+    }
+
+    /** mirrorWidth > 0: сцена зеркально отражается по горизонтали на экране такой ширины. */
+    McPainter(DrawContext context, int mirrorWidth) {
+        Matrix4f m = new Matrix4f(context.getMatrices().peek().getPositionMatrix());
+        if (mirrorWidth > 0) {
+            m.translate((float) mirrorWidth, 0f, 0f);
+            m.scale(-1f, 1f, 1f);
+        }
+        this.matrix = m;
     }
 
     static void begin(DrawContext context) {

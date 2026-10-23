@@ -68,10 +68,11 @@ final class AmbientFx {
 
     static void render(DrawContext ctx, int w, int h, double t) {
         int x0 = (int) (w * 0.45f);
-        int span = w - x0;
+        int x1 = w;
+        int span = x1 - x0;
 
         // лёгкий туман у нижнего края
-        ctx.fillGradient(x0, h - h / 3, w, h, 0x00503080, 0x38503080);
+        ctx.fillGradient(x0, h - h / 3, x1, h, 0x00503080, 0x38503080);
 
         // плывущие тыквы, привидения, мыши
         for (int i = 0; i < SPRITES; i++) {
@@ -81,7 +82,7 @@ final class AmbientFx {
             float fade = Math.min(1f, (float) Math.sin(Math.PI * u) * 2f);
             if (type == 2) {
                 int frame = ((int) (t * 6 + i)) % 2;
-                float x = w + 12 - u * (span + 40);
+                float x = x1 + 12 - u * (span + 40);
                 float y = h * (0.40f + 0.5f * rnd(i, 3)) + (float) Math.sin(t * 1.3 + rnd(i, 4) * 6.28) * 12f;
                 sprite(ctx, frame == 0 ? BAT_UP : BAT_DOWN, x, y, 2, fade * 0.65f);
             } else {

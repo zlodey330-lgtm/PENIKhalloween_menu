@@ -227,6 +227,7 @@ public final class HalloweenScreen extends Screen {
         McPainter.end();
 
         AmbientFx.render(ctx, width, height, t);
+        BigPumpkin.render(ctx, panelX + panelW / 2, accountY + 18, height - 8, panelW, t);
 
         drawTitle(ctx, t);
 
