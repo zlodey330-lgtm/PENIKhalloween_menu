@@ -1,6 +1,8 @@
 package com.halloweenmenu.client;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.sound.SoundInstance;
 import net.minecraft.sound.SoundEvent;
@@ -78,6 +80,17 @@ public final class HalloweenMusic {
     /** Каждый тик клиента. */
     public static void tick(MinecraftClient client) {
         if (client.world != null) {
+            if (active) {
+                shutdown();
+            }
+            return;
+        }
+        Screen screen = client.currentScreen;
+        if (screen instanceof HalloweenScreen) {
+            // вышли из мира в хэллоуинское меню: включаем плейлист заново
+            active = true;
+        } else if (screen instanceof TitleScreen) {
+            // открыто ванильное главное меню: пусть играет ванильная музыка
             if (active) {
                 shutdown();
             }
